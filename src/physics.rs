@@ -606,7 +606,16 @@ impl GameWorld {
                 dir += 1.0;
                 p.facing = 1;
             }
-            p.vx = dir * MOVE_SPEED;
+            let has_rope = self.level.rope_max_dist.is_some();
+            if has_rope && !p.on_ground {
+                // Preserve pendulum swing momentum in mid-air while still allowing responsive air pumping!
+                p.vx *= 0.992;
+                if dir != 0.0 {
+                    p.vx = (p.vx + dir * 720.0 * dt).clamp(-560.0, 560.0);
+                }
+            } else {
+                p.vx = dir * MOVE_SPEED;
+            }
 
             // Carry horizontal movement if standing on a teammate's head
             let mut carry_vx = 0.0;
@@ -774,7 +783,7 @@ impl GameWorld {
             }
         }
 
-        // 6c. Rope / Tether constraint between adjacent connected players
+        // 6c. Heave-Ho style Pendulum Rope / Tether physics between adjacent connected players
         if let Some(max_d) = self.level.rope_max_dist {
             let active_indices: Vec<usize> = self
                 .players
@@ -784,7 +793,39 @@ impl GameWorld {
                 .map(|(idx, _)| idx)
                 .collect();
             if active_indices.len() >= 2 {
-                for _ in 0..3 {
+                // Allow dangling players to pump their swing with left/right input
+                for pair in active_indices.windows(2) {
+                    let a = pair[0];
+                    let b = pair[1];
+                    let dx = (self.players[b].x - self.players[a].x);
+                    let dy = (self.players[b].y - self.players[a].y);
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    if dist >= max_d * 0.92 && dist > 1.0 {
+                        // Tangent vector perpendicular to rope
+                        let tx = -dy / dist;
+                        let ty = dx / dist;
+                        for &(idx, other) in &[(a, b), (b, a)] {
+                            if !self.players[idx].on_ground && self.players[idx].y > self.players[other].y + 12.0 {
+                                let pump = if self.players[idx].input.right {
+                                    1.0
+                                } else if self.players[idx].input.left {
+                                    -1.0
+                                } else {
+                                    0.0
+                                };
+                                if pump != 0.0 {
+                                    // Ensure tangent points in the horizontal direction of pump
+                                    let sign = if tx * pump >= 0.0 { 1.0 } else { -1.0 };
+                                    self.players[idx].vx += tx * sign * 560.0 * dt;
+                                    self.players[idx].vy += ty * sign * 380.0 * dt;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Multi-iteration Position-Based Dynamics + Radial Velocity Projection
+                for _ in 0..5 {
                     for pair in active_indices.windows(2) {
                         let a = pair[0];
                         let b = pair[1];
@@ -795,31 +836,54 @@ impl GameWorld {
                         let dx = bx - ax;
                         let dy = by - ay;
                         let dist = (dx * dx + dy * dy).sqrt();
+
                         if dist > max_d && dist > 0.001 {
                             let excess = dist - max_d;
                             let nx = dx / dist;
                             let ny = dy / dist;
-                            let wa = if self.players[a].on_ground && !self.players[b].on_ground { 0.25 } else { 0.5 };
-                            let wb = 1.0 - wa;
 
-                            let new_ax = self.players[a].x + nx * excess * wa;
-                            let new_ay = self.players[a].y + ny * excess * wa;
-                            let new_bx = self.players[b].x - nx * excess * wb;
-                            let new_by = self.players[b].y - ny * excess * wb;
+                            // Grounded player acts as a heavy anchor so the dangling player can swing cleanly!
+                            let a_grounded = self.players[a].on_ground;
+                            let b_grounded = self.players[b].on_ground;
+                            let (wa, wb) = match (a_grounded, b_grounded) {
+                                (true, false) => (0.12, 0.88),
+                                (false, true) => (0.88, 0.12),
+                                _ => (0.5, 0.5),
+                            };
 
-                            if !all_solids.iter().any(|s| overlaps(new_ax, new_ay, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
-                                self.players[a].x = new_ax;
-                                self.players[a].y = new_ay;
-                                if ny < -0.2 {
-                                    self.players[a].vy = self.players[a].vy.min(120.0);
-                                }
+                            let move_ax = nx * excess * wa;
+                            let move_ay = ny * excess * wa;
+                            let move_bx = -nx * excess * wb;
+                            let move_by = -ny * excess * wb;
+
+                            // Resolve X and Y separately against solids so players slide smoothly over ledge lips!
+                            let try_ax = self.players[a].x + move_ax;
+                            if !all_solids.iter().any(|s| overlaps(try_ax, self.players[a].y, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
+                                self.players[a].x = try_ax;
                             }
-                            if !all_solids.iter().any(|s| overlaps(new_bx, new_by, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
-                                self.players[b].x = new_bx;
-                                self.players[b].y = new_by;
-                                if ny > 0.2 {
-                                    self.players[b].vy = self.players[b].vy.min(120.0);
-                                }
+                            let try_ay = self.players[a].y + move_ay;
+                            if !all_solids.iter().any(|s| overlaps(self.players[a].x, try_ay, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
+                                self.players[a].y = try_ay;
+                            }
+
+                            let try_bx = self.players[b].x + move_bx;
+                            if !all_solids.iter().any(|s| overlaps(try_bx, self.players[b].y, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
+                                self.players[b].x = try_bx;
+                            }
+                            let try_by = self.players[b].y + move_by;
+                            if !all_solids.iter().any(|s| overlaps(self.players[b].x, try_by, PLAYER_SIZE, PLAYER_SIZE, s.x, s.y, s.w, s.h)) {
+                                self.players[b].y = try_by;
+                            }
+
+                            // Project out ONLY the outward radial velocity -> preserves 100% of tangential swing momentum!
+                            let rel_vx = self.players[b].vx - self.players[a].vx;
+                            let rel_vy = self.players[b].vy - self.players[a].vy;
+                            let rel_vn = rel_vx * nx + rel_vy * ny;
+                            if rel_vn > 0.0 {
+                                self.players[a].vx += nx * rel_vn * wa;
+                                self.players[a].vy += ny * rel_vn * wa;
+                                self.players[b].vx -= nx * rel_vn * wb;
+                                self.players[b].vy -= ny * rel_vn * wb;
                             }
                         }
                     }

@@ -8,6 +8,7 @@ mod level_07;
 mod level_08;
 mod level_09;
 mod level_10;
+mod level_11;
 
 use serde::Serialize;
 
@@ -229,6 +230,7 @@ const LEVELS: &[fn(usize) -> LevelData] = &[
     level_08::build,
     level_09::build,
     level_10::build,
+    level_11::build,
 ];
 
 pub fn level_count() -> usize {
