@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PicoBox TV 🐱</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="tv-wrap">
+    <header class="tv-bar">
+      <div class="tv-left">
+        <span class="tv-title">🐱 PicoBox</span>
+        <span class="tv-hint" id="levelName">Fase 1</span>
+        <span class="tv-hint" id="levelHint" style="color:#cbd5e1"></span>
+      </div>
+
+      <div class="tv-controls">
+        <span id="levelBtns" style="display:flex;gap:4px"></span>
+        <button class="btn" id="restartBtn">↻ Reiniciar</button>
+        <button class="btn" id="qrToggleBtn">📱 QR</button>
+        <button class="btn" id="soundBtn">🔊</button>
+      </div>
+    </header>
+
+    <div class="stage-wrap">
+      <canvas id="gameCanvas" width="1280" height="720"></canvas>
+      <div class="qr-overlay" id="qrOverlay">
+        <strong style="font-size:0.95rem">Entre pelo Celular 📱</strong>
+        <img src="/qr.svg" alt="QR Code" />
+        <div class="qr-url" id="qrUrl">…</div>
+        <div style="font-size:0.75rem;color:var(--muted)">Celular, Controle (Joystick) ou Teclado (Setas + Espaço / WASD)</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/tv.js?v=3"></script>
+</body>
+</html>
