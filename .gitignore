@@ -1,4 +1,6 @@
 /target/
+**/node_modules/
+**/.angular/
 *.log
 .DS_Store
 Thumbs.db

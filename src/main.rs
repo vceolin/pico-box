@@ -114,15 +114,20 @@ async fn serve_file(state: &AppState, name: &str) -> Response {
 }
 
 async fn serve_play(State(state): State<AppState>) -> Response {
-    serve_file(&state, "play.html").await
+    serve_file(&state, "index.html").await
 }
 
 async fn serve_tv(State(state): State<AppState>) -> Response {
-    serve_file(&state, "tv.html").await
+    serve_file(&state, "index.html").await
 }
 
 async fn serve_asset(State(state): State<AppState>, AxumPath(path): AxumPath<String>) -> Response {
-    serve_file(&state, &path).await
+    let full = state.public_dir.join(path.trim_start_matches('/'));
+    if full.exists() && full.is_file() {
+        serve_file(&state, &path).await
+    } else {
+        serve_file(&state, "index.html").await
+    }
 }
 
 async fn serve_qr(State(state): State<AppState>) -> Response {
