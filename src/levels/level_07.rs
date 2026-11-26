@@ -31,7 +31,7 @@ pub fn build(n: usize) -> LevelData {
         "Fase 7: Ordem Sincronizada",
         hint,
         n,
-        (580.0, 560.0),
+        (370.0, 560.0),
         (1080.0, 416.0),
         r(1165.0, 406.0, 48.0, 64.0),
     );

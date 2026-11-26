@@ -9,7 +9,7 @@ pub fn build(n: usize) -> LevelData {
         "Fase 8: Chão Quebradiço",
         "Dividam-se! Baixo abre o portão ciano da chave em cima; cima libera a ponte rosa pro time de baixo!",
         n,
-        (60.0, 520.0),
+        (40.0, 560.0),
         (805.0, 320.0),
         r(1145.0, 446.0, 48.0, 64.0),
     );
@@ -18,9 +18,9 @@ pub fn build(n: usize) -> LevelData {
         r(1252.0, 0.0, 28.0, 720.0),
         // Start floor (left)
         r(0.0, 600.0, 220.0, 120.0),
-        // Upper step to climb to top lane
-        r(90.0, 505.0, 120.0, 24.0),
-        r(190.0, 415.0, 130.0, 24.0),
+        // Upper step to climb to top lane (placed cleanly above 2-row 8P spawn!)
+        r(95.0, 492.0, 115.0, 22.0),
+        r(190.0, 412.0, 130.0, 24.0),
         // Upper key room (sealed by cyan gate on left!)
         r(680.0, 375.0, 220.0, 26.0),
         r(680.0, 235.0, 220.0, 24.0),

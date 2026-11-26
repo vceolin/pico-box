@@ -978,7 +978,7 @@ impl GameWorld {
                 for p in &self.players {
                     if p.connected
                         && !p.in_door
-                        && overlaps(p.x, p.y, PLAYER_SIZE, PLAYER_SIZE, self.key.x - 14.0, self.key.y - 14.0, 28.0, 28.0)
+                        && overlaps(p.x, p.y, PLAYER_SIZE, PLAYER_SIZE, self.key.x - 20.0, self.key.y - 20.0, 40.0, 40.0)
                     {
                         self.key.holder_id = Some(p.id.clone());
                         self.sfx_event = Some("key");
@@ -1061,5 +1061,217 @@ impl GameWorld {
             "banner": self.banner,
             "sfx": self.sfx_event,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn spawn_n(level_idx: usize, n: usize) -> GameWorld {
+        let mut w = GameWorld::new();
+        for i in 0..n {
+            w.join_player(format!("p{i}"), format!("Bot{i}"));
+        }
+        w.load_level(level_idx);
+        w
+    }
+
+    fn run_frames(w: &mut GameWorld, frames: usize) {
+        for _ in 0..frames {
+            w.step(1.0 / 60.0);
+        }
+    }
+
+    /// 1. Full 15-level x 1P..8P (120 combinations) structural + live 2-second spawn/physics audit
+    #[test]
+    fn audit_all_levels_and_player_counts() {
+        for lvl in 0..level_count() {
+            for n in 1..=8 {
+                let mut w = spawn_n(lvl, n);
+                let name = w.level.name.clone();
+
+                // Check all gates reference a valid button or seq_all
+                for g in &w.level.gates {
+                    if g.button_id == "seq_all" {
+                        assert!(
+                            !w.level.seq_buttons.is_empty(),
+                            "Level {lvl} ({name}, {n}P): gate uses seq_all but has no seq_buttons"
+                        );
+                    } else {
+                        assert!(
+                            w.level.buttons.iter().any(|b| b.id == g.button_id),
+                            "Level {lvl} ({name}, {n}P): gate references missing button '{}'",
+                            g.button_id
+                        );
+                    }
+                }
+
+                // Check sequence buttons are contiguous 1..=k
+                if !w.level.seq_buttons.is_empty() {
+                    let mut orders: Vec<usize> = w.level.seq_buttons.iter().map(|b| b.order).collect();
+                    orders.sort();
+                    let expected: Vec<usize> = (1..=orders.len()).collect();
+                    assert_eq!(
+                        orders, expected,
+                        "Level {lvl} ({name}, {n}P): non-contiguous sequence buttons"
+                    );
+                }
+
+                // Check push blocks & elevators never require more players than exist
+                for b in &w.level.push_blocks {
+                    assert!(
+                        b.required <= n,
+                        "Level {lvl} ({name}, {n}P): push block requires {} > {n}",
+                        b.required
+                    );
+                }
+                for e in &w.level.elevators {
+                    assert!(
+                        e.required <= n,
+                        "Level {lvl} ({name}, {n}P): elevator requires {} > {n}",
+                        e.required
+                    );
+                }
+
+                // Check key & door are inside world bounds
+                assert!(
+                    w.level.key_pos.0 > 28.0 && w.level.key_pos.0 < WORLD_W - 28.0
+                        && w.level.key_pos.1 > 10.0 && w.level.key_pos.1 < WORLD_H - 28.0,
+                    "Level {lvl} ({name}, {n}P): key out of bounds {:?}",
+                    w.level.key_pos
+                );
+                assert!(
+                    w.level.door.x > 28.0 && w.level.door.x + w.level.door.w < WORLD_W - 20.0,
+                    "Level {lvl} ({name}, {n}P): door out of bounds"
+                );
+
+                // Simulate 120 frames (2 full seconds) idle: nobody may fall off a cliff or die on spawn!
+                for frame in 0..120 {
+                    w.step(1.0 / 60.0);
+                    assert!(
+                        w.banner.is_none(),
+                        "Level {lvl} ({name}, {n}P): player died/reset on spawn at frame {frame}: {:?}",
+                        w.banner
+                    );
+                }
+                for p in &w.players {
+                    assert!(
+                        p.on_ground,
+                        "Level {lvl} ({name}, {n}P): {} failed to settle on ground (x={}, y={})",
+                        p.name, p.x, p.y
+                    );
+                }
+            }
+        }
+    }
+
+    /// 2. Live 60Hz Bot Playthrough: Beat Level 1 (Torre Humana) with 2 players stacking!
+    #[test]
+    fn playtest_level_01_two_player_stack() {
+        let mut w = spawn_n(0, 2);
+        run_frames(&mut w, 30); // settle
+
+        // Walk both players right onto the mid step (x=360..540, y=550); p1 is ahead on the right edge, p0 behind
+        for _ in 0..240 {
+            let p0x = w.players[0].x;
+            let p1x = w.players[1].x;
+            let p0_jump = p0x > 300.0 && p0x < 355.0 && w.players[0].on_ground;
+            let p1_jump = p1x > 300.0 && p1x < 355.0 && w.players[1].on_ground;
+            w.set_input("p0", false, p0x < 440.0, p0_jump);
+            w.set_input("p1", false, p1x < 495.0, p1_jump);
+            w.step(1.0 / 60.0);
+        }
+        assert!(w.players[0].y < 525.0 && w.players[1].y < 525.0, "Both players should be on mid step");
+
+        // p0 jumps onto p1's head (stopping right above p1!), then jumps right onto the floating key ledge (x=580, y=425)
+        let mut landed_on_head = false;
+        for frame in 0..240 {
+            if w.key.holder_id.is_some() { break; }
+            let p0x = w.players[0].x;
+            let p0y = w.players[0].y;
+            let p1x = w.players[1].x;
+            let on_head = p0y < 495.0 && (p0x - p1x).abs() < 34.0 && w.players[0].on_ground;
+            if on_head { landed_on_head = true; }
+            let go_right = if !landed_on_head { p0x < p1x - 2.0 } else { p0x < 710.0 };
+            let near_p1 = !landed_on_head && p0x >= p1x - 52.0 && w.players[0].on_ground;
+            let need_jump = (frame % 2 == 0) && (near_p1 || on_head);
+            w.set_input("p1", false, false, false);
+            w.set_input("p0", false, go_right, need_jump);
+            w.step(1.0 / 60.0);
+        }
+        assert!(
+            w.key.holder_id.is_some(),
+            "p0 should have grabbed the key! (p0={:.0},{:.0} p1={:.0},{:.0} landed_on_head={landed_on_head})",
+            w.players[0].x, w.players[0].y, w.players[1].x, w.players[1].y
+        );
+
+        // Now both players run to the exit door (x=1120, y=486 on ledge x=940, y=550)!
+        for _ in 0..360 {
+            if w.status == "cleared" { break; }
+            for i in 0..2 {
+                let id = format!("p{i}");
+                let px = w.players[i].x;
+                let need_jump = px > 880.0 && px < 938.0 && w.players[i].on_ground;
+                w.set_input(&id, false, px < 1135.0, need_jump);
+            }
+            w.step(1.0 / 60.0);
+        }
+        assert_eq!(w.status, "cleared", "Level 1 should be cleared by both players!");
+    }
+
+    /// 3. Live 60Hz Bot Playthrough: Verify Push-Chain works with 3 players on Level 3!
+    #[test]
+    fn playtest_level_03_three_player_push_chain() {
+        let mut w = spawn_n(2, 3);
+        run_frames(&mut w, 30);
+        let start_bx = w.level.push_blocks[0].x;
+
+        // Only 2 players push -> block requires 3, must NOT move!
+        for _ in 0..90 {
+            w.set_input("p0", false, true, false);
+            w.set_input("p1", false, true, false);
+            w.set_input("p2", false, false, false);
+            w.step(1.0 / 60.0);
+        }
+        assert!(
+            (w.level.push_blocks[0].x - start_bx).abs() < 1.0,
+            "Block should NOT move with only 2 of 3 players pushing"
+        );
+
+        // Now all 3 players push in a horizontal chain -> block MUST move right!
+        for _ in 0..140 {
+            w.set_input("p0", false, true, false);
+            w.set_input("p1", false, true, false);
+            w.set_input("p2", false, true, false);
+            w.step(1.0 / 60.0);
+        }
+        assert!(
+            w.level.push_blocks[0].x > start_bx + 80.0,
+            "3-player push chain should slide the heavy block right (moved {:.1}px)",
+            w.level.push_blocks[0].x - start_bx
+        );
+    }
+
+    /// 4. Live 60Hz Bot Playthrough: Verify Heave-Ho Pendulum Swing on Level 11!
+    #[test]
+    fn playtest_level_11_pendulum_swing_key_grab() {
+        let mut w = spawn_n(10, 2);
+        run_frames(&mut w, 30);
+
+        // p0 anchors near the cliff edge (x=215), p1 runs off the cliff and swings right into the hanging key (410, 515)!
+        for _ in 0..320 {
+            if w.key.holder_id.is_some() { break; }
+            let p0x = w.players[0].x;
+            w.set_input("p0", p0x > 225.0, p0x < 210.0, false);
+            w.set_input("p1", false, true, false);
+            w.step(1.0 / 60.0);
+        }
+        assert!(w.banner.is_none(), "Neither player should have died during the pendulum swing!");
+        assert!(
+            w.key.holder_id.is_some(),
+            "Swinging player should grab the hanging key underneath the chasm! (p1 at {:.0},{:.0}, key at {:?})",
+            w.players[1].x, w.players[1].y, w.level.key_pos
+        );
     }
 }
