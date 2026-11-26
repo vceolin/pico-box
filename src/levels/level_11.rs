@@ -4,14 +4,14 @@ use super::{r, rope_len_for, LevelData};
 /// Escala o comprimento da corda e a largura da ilha central para 2P-8P!
 pub fn build(n: usize) -> LevelData {
     let mid_w = (170.0 + (n.saturating_sub(2) as f32) * 18.0).min(240.0);
-    let key_y = (515.0 + (n.saturating_sub(2) as f32) * 16.0).min(585.0);
+    let key_y = (495.0 + (n.saturating_sub(2) as f32) * 14.0).min(565.0);
     let mut lvl = LevelData::base(
         10,
         "Fase 11: Balanço em Dupla",
         format!("Heave Ho ({n}P)! Ancorem na beirada enquanto a corrente se balança (← / →) até a chave!"),
         n,
         (55.0, 340.0),
-        (410.0, key_y),
+        (385.0, key_y),
         r(1125.0, 376.0, 48.0, 64.0),
     );
     lvl.rope_max_dist = rope_len_for(n);

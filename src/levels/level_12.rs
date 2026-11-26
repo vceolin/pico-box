@@ -9,7 +9,7 @@ pub fn build(n: usize) -> LevelData {
         format!("Mergulho ({n}P)! Ancorem lá em cima enquanto a corrente desce para pegar a chave sob o penhasco!"),
         n,
         (55.0, 290.0),
-        (560.0, 520.0),
+        (560.0, 475.0),
         r(1140.0, 316.0, 48.0, 64.0),
     );
     lvl.rope_max_dist = rope_len_for(n);
@@ -21,7 +21,7 @@ pub fn build(n: usize) -> LevelData {
         // Mid high overhang (walk on top, dangle underneath to grab key!)
         r(450.0, 370.0, 260.0, 34.0),
         // Tiny catch ledge below overhang for the cyan button
-        r(520.0, 565.0, 120.0, 24.0),
+        r(520.0, 520.0, 120.0, 24.0),
         // High right exit cliff + ceiling over gate
         r(880.0, 380.0, 400.0, 340.0),
         r(920.0, 220.0, 332.0, 26.0),
@@ -34,7 +34,7 @@ pub fn build(n: usize) -> LevelData {
         lvl.buttons = vec![ButtonDef {
             id: "abyss_gate".to_string(),
             x: 548.0,
-            y: 551.0,
+            y: 506.0,
             w: 64.0,
             h: 14.0,
             color: "#22d3ee".to_string(),

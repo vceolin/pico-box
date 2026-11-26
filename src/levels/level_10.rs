@@ -13,7 +13,7 @@ pub fn build(n: usize) -> LevelData {
         r(1150.0, 386.0, 48.0, 64.0),
     );
     lvl.seq_step_timeout = timeout;
-    lvl.rope_max_dist = if n >= 2 { Some(235.0) } else { None };
+    lvl.rope_max_dist = if n >= 2 { Some(180.0) } else { None };
     lvl.solids = vec![
         r(0.0, 0.0, 28.0, 720.0),
         r(1252.0, 0.0, 28.0, 720.0),

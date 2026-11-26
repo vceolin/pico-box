@@ -259,15 +259,15 @@ pub fn wind(x: f32, y: f32, w: f32, h: f32, force_y: f32) -> WindDef {
     WindDef { x, y, w, h, force_y }
 }
 
-/// Scales per-link rope length so 2P has a generous swing and 3P-8P form a tight Heave-Ho human chain!
+/// Scales per-link rope length so 2P has a tight, snappy swing and 3P-8P form a compact Heave-Ho human chain!
 pub fn rope_len_for(n: usize) -> Option<f32> {
     match n {
         0 | 1 => None,
-        2 => Some(225.0),
-        3 => Some(170.0),
-        4 => Some(140.0),
-        5 => Some(120.0),
-        _ => Some(105.0),
+        2 => Some(175.0),
+        3 => Some(135.0),
+        4 => Some(115.0),
+        5 => Some(100.0),
+        _ => Some(90.0),
     }
 }
 

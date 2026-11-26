@@ -25,6 +25,6 @@ pub fn build(n: usize) -> LevelData {
         r(590.0, 692.0, 110.0, 28.0),
         r(890.0, 692.0, 105.0, 28.0),
     ];
-    lvl.rope_max_dist = Some(185.0);
+    lvl.rope_max_dist = Some(150.0);
     lvl
 }

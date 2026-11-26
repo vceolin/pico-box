@@ -22,7 +22,7 @@ pub fn build(n: usize) -> LevelData {
         // Mid anchor island (widens for larger groups)
         r(545.0 - (mid_w - 180.0) * 0.5, 410.0, mid_w, 30.0),
         // Lower secret button ledge underneath mid island
-        r(595.0, 575.0, 90.0, 22.0),
+        r(595.0, 535.0, 90.0, 22.0),
         // Right exit cliff + ceiling over gate
         r(970.0, 420.0, 310.0, 300.0),
         r(1010.0, 260.0, 242.0, 26.0),
@@ -41,7 +41,7 @@ pub fn build(n: usize) -> LevelData {
         lvl.buttons = vec![ButtonDef {
             id: "w3_final_gate".to_string(),
             x: 610.0,
-            y: 561.0,
+            y: 521.0,
             w: 60.0,
             h: 14.0,
             color: "#f472b6".to_string(),
