@@ -296,6 +296,46 @@ export class TvComponent implements OnInit, AfterViewInit, OnDestroy {
       ctx.fillRect(s.x, s.y, s.w, Math.min(8, s.h));
     }
 
+    // Wind updraft zones (animated rising air streaks)
+    const tSec = performance.now() * 0.001;
+    for (const w of (level.winds || [])) {
+      const grad = ctx.createLinearGradient(w.x, w.y + w.h, w.x, w.y);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.02)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(w.x, w.y, w.w, w.h);
+
+      ctx.strokeStyle = 'rgba(14, 165, 233, 0.45)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      const cols = Math.max(3, Math.floor(w.w / 45));
+      for (let i = 0; i < cols; i++) {
+        const lx = w.x + ((i + 0.5) / cols) * w.w;
+        const phase = ((tSec * 220 + i * 97) % w.h);
+        const ly = w.y + w.h - phase;
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(lx, Math.max(w.y, ly - 38));
+        ctx.stroke();
+      }
+    }
+
+    // Bouncy mid-air bumpers
+    for (const bm of (level.bumpers || [])) {
+      const rad = bm.radius + bm.anim * 9;
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(bm.x, bm.y, rad, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e9d5ff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(bm.x, bm.y, rad * 0.36, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     for (const sp of level.spikes) {
       ctx.fillStyle = '#ef4444';
       const count = Math.max(1, Math.floor(sp.w / 20));

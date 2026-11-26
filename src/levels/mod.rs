@@ -9,6 +9,10 @@ mod level_08;
 mod level_09;
 mod level_10;
 mod level_11;
+mod level_12;
+mod level_13;
+mod level_14;
+mod level_15;
 
 use serde::Serialize;
 
@@ -119,6 +123,24 @@ pub struct SawDef {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct BumperDef {
+    pub x: f32,
+    pub y: f32,
+    pub radius: f32,
+    pub power: f32,
+    pub anim: f32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WindDef {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub force_y: f32, // negative = upward updraft
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct LevelData {
     pub index: usize,
     pub name: String,
@@ -138,6 +160,8 @@ pub struct LevelData {
     pub crumbles: Vec<CrumbleDef>,
     pub springs: Vec<SpringDef>,
     pub saws: Vec<SawDef>,
+    pub bumpers: Vec<BumperDef>,
+    pub winds: Vec<WindDef>,
     pub rope_max_dist: Option<f32>,
     pub key_pos: (f32, f32),
     pub door: Rect,
@@ -171,6 +195,8 @@ impl LevelData {
             crumbles: vec![],
             springs: vec![],
             saws: vec![],
+            bumpers: vec![],
+            winds: vec![],
             rope_max_dist: None,
             key_pos,
             door,
@@ -219,6 +245,20 @@ pub fn saw(x1: f32, y1: f32, x2: f32, y2: f32, speed: f32) -> SawDef {
     }
 }
 
+pub fn bumper(x: f32, y: f32, power: f32) -> BumperDef {
+    BumperDef {
+        x,
+        y,
+        radius: 26.0,
+        power,
+        anim: 0.0,
+    }
+}
+
+pub fn wind(x: f32, y: f32, w: f32, h: f32, force_y: f32) -> WindDef {
+    WindDef { x, y, w, h, force_y }
+}
+
 const LEVELS: &[fn(usize) -> LevelData] = &[
     level_01::build,
     level_02::build,
@@ -231,6 +271,10 @@ const LEVELS: &[fn(usize) -> LevelData] = &[
     level_09::build,
     level_10::build,
     level_11::build,
+    level_12::build,
+    level_13::build,
+    level_14::build,
+    level_15::build,
 ];
 
 pub fn level_count() -> usize {

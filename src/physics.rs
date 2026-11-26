@@ -783,6 +783,47 @@ impl GameWorld {
             }
         }
 
+        // 6b2. Bouncy mid-air bumpers!
+        for bm in &mut self.level.bumpers {
+            bm.anim = (bm.anim - dt * 5.0).max(0.0);
+            for p in &mut self.players {
+                if !p.connected || p.in_door {
+                    continue;
+                }
+                let pcx = p.x + PLAYER_SIZE * 0.5;
+                let pcy = p.y + PLAYER_SIZE * 0.5;
+                let dx = pcx - bm.x;
+                let dy = pcy - bm.y;
+                let dist = (dx * dx + dy * dy).sqrt();
+                let min_d = bm.radius + PLAYER_SIZE * 0.5;
+                if dist < min_d && dist > 0.001 {
+                    let nx = dx / dist;
+                    let ny = dy / dist;
+                    // Push out slightly & launch with upward bias so bumpers feel joyful and forgiving!
+                    p.x += nx * (min_d - dist + 2.0);
+                    p.y += ny * (min_d - dist + 2.0);
+                    p.vx = nx * bm.power * 0.72;
+                    p.vy = (ny * bm.power).min(-bm.power * 0.78);
+                    p.on_ground = false;
+                    bm.anim = 1.0;
+                    self.sfx_event = Some("spring");
+                }
+            }
+        }
+
+        // 6b3. Wind updrafts!
+        for w in &self.level.winds {
+            for p in &mut self.players {
+                if p.connected
+                    && !p.in_door
+                    && overlaps(p.x, p.y, PLAYER_SIZE, PLAYER_SIZE, w.x, w.y, w.w, w.h)
+                {
+                    p.vy = (p.vy + w.force_y * dt).max(-420.0);
+                    p.on_ground = false;
+                }
+            }
+        }
+
         // 6c. Heave-Ho style Pendulum Rope / Tether physics between adjacent connected players
         if let Some(max_d) = self.level.rope_max_dist {
             let active_indices: Vec<usize> = self
@@ -797,8 +838,8 @@ impl GameWorld {
                 for pair in active_indices.windows(2) {
                     let a = pair[0];
                     let b = pair[1];
-                    let dx = (self.players[b].x - self.players[a].x);
-                    let dy = (self.players[b].y - self.players[a].y);
+                    let dx = self.players[b].x - self.players[a].x;
+                    let dy = self.players[b].y - self.players[a].y;
                     let dist = (dx * dx + dy * dy).sqrt();
                     if dist >= max_d * 0.92 && dist > 1.0 {
                         // Tangent vector perpendicular to rope
