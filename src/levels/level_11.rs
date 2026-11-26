@@ -1,26 +1,27 @@
-use super::{r, LevelData};
+use super::{r, rope_len_for, LevelData};
 
 /// Fase 11: Balanço em Dupla (Inspirado em Heave Ho!)
-/// Um jogador serve de âncora na beirada enquanto o outro se balança no pêndulo da corda
-/// para pegar a chave suspensa no abismo e se lançar para a outra plataforma!
+/// Escala o comprimento da corda e a largura da ilha central para 2P-8P!
 pub fn build(n: usize) -> LevelData {
+    let mid_w = (170.0 + (n.saturating_sub(2) as f32) * 18.0).min(240.0);
+    let key_y = (515.0 + (n.saturating_sub(2) as f32) * 16.0).min(585.0);
     let mut lvl = LevelData::base(
         10,
         "Fase 11: Balanço em Dupla",
-        "Heave Ho! Um segura na beirada enquanto o outro se balança na corda (← / →) para pegar a chave e atravessar!",
+        format!("Heave Ho ({n}P)! Ancorem na beirada enquanto a corrente se balança (← / →) até a chave!"),
         n,
-        (75.0, 340.0),
-        (410.0, 515.0),
+        (55.0, 340.0),
+        (410.0, key_y),
         r(1125.0, 376.0, 48.0, 64.0),
     );
-    lvl.rope_max_dist = if n >= 2 { Some(225.0) } else { None };
+    lvl.rope_max_dist = rope_len_for(n);
     lvl.solids = vec![
         r(0.0, 0.0, 28.0, 720.0),
         r(1252.0, 0.0, 28.0, 720.0),
         // High left anchor cliff
         r(0.0, 420.0, 275.0, 300.0),
-        // Mid-chasm island (landing & second anchor!)
-        r(535.0, 450.0, 170.0, 30.0),
+        // Mid-chasm island (scales wider for larger groups)
+        r(535.0, 450.0, mid_w, 30.0),
         // High right exit cliff
         r(920.0, 440.0, 360.0, 280.0),
         // Pit floor

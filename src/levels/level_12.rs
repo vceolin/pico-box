@@ -1,18 +1,18 @@
-use super::{r, ButtonDef, GateDef, LevelData};
+use super::{r, rope_len_for, ButtonDef, GateDef, LevelData};
 
 /// Fase 12: Mergulho no Abismo — A chave e o botão ciano ficam pendurados SOB o precipício!
-/// Um jogador ancora no topo enquanto o outro mergulha na corda para pegar a chave, e depois é puxado de volta!
+/// Escala o comprimento da corda para formar uma corrente humana de 2P-8P!
 pub fn build(n: usize) -> LevelData {
     let mut lvl = LevelData::base(
         11,
         "Fase 12: Mergulho no Abismo",
-        "Um ancora lá em cima enquanto o outro desce na corda para pegar a chave sob o penhasco!",
+        format!("Mergulho ({n}P)! Ancorem lá em cima enquanto a corrente desce para pegar a chave sob o penhasco!"),
         n,
-        (90.0, 290.0),
+        (55.0, 290.0),
         (560.0, 520.0),
         r(1140.0, 316.0, 48.0, 64.0),
     );
-    lvl.rope_max_dist = if n >= 2 { Some(235.0) } else { None };
+    lvl.rope_max_dist = rope_len_for(n);
     lvl.solids = vec![
         r(0.0, 0.0, 28.0, 720.0),
         r(1252.0, 0.0, 28.0, 720.0),

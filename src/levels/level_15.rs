@@ -1,25 +1,26 @@
-use super::{bumper, r, saw, wind, ButtonDef, GateDef, LevelData};
+use super::{bumper, r, rope_len_for, saw, wind, ButtonDef, GateDef, LevelData};
 
 /// Fase 15: Showdown Mundo 3 — Heave Ho Final!
-/// Corda + Corrente de Ar + Bumper Flutuante + Botão sob Penhasco + Serra Giratória!
+/// Corda adaptativa + Corrente de Ar + Bumper Flutuante + Botão sob Penhasco + Serra Giratória!
 pub fn build(n: usize) -> LevelData {
+    let mid_w = (180.0 + (n.saturating_sub(2) as f32) * 16.0).min(240.0);
     let mut lvl = LevelData::base(
         14,
         "Fase 15: Showdown Mundo 3",
-        "SHOWDOWN HEAVE HO! Corda, vento, bumper, serra e mergulho no botão — tudo junto!",
+        format!("SHOWDOWN HEAVE HO ({n}P)! Corda, vento, bumper, serra e mergulho no botão — tudo junto!"),
         n,
-        (60.0, 480.0),
+        (45.0, 480.0),
         (650.0, 185.0),
         r(1150.0, 356.0, 48.0, 64.0),
     );
-    lvl.rope_max_dist = if n >= 2 { Some(235.0) } else { None };
+    lvl.rope_max_dist = rope_len_for(n);
     lvl.solids = vec![
         r(0.0, 0.0, 28.0, 720.0),
         r(1252.0, 0.0, 28.0, 720.0),
         // Left start cliff
         r(0.0, 560.0, 220.0, 160.0),
-        // Mid anchor island
-        r(545.0, 410.0, 180.0, 30.0),
+        // Mid anchor island (widens for larger groups)
+        r(545.0 - (mid_w - 180.0) * 0.5, 410.0, mid_w, 30.0),
         // Lower secret button ledge underneath mid island
         r(595.0, 575.0, 90.0, 22.0),
         // Right exit cliff + ceiling over gate

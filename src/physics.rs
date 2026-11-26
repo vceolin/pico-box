@@ -141,9 +141,12 @@ impl GameWorld {
 
     fn reset_player_positions(&mut self) {
         let (sx, sy) = self.level.spawn;
+        // Arrange up to 4 players per row (stacking a 2nd row for 5P-8P) so nobody ever spawns off a narrow cliff!
         for (i, p) in self.players.iter_mut().enumerate() {
-            p.x = sx + (i as f32) * (PLAYER_SIZE + 8.0);
-            p.y = sy;
+            let col = (i % 4) as f32;
+            let row = (i / 4) as f32;
+            p.x = (sx + col * (PLAYER_SIZE + 4.0)).min(WORLD_W - 80.0);
+            p.y = sy - row * (PLAYER_SIZE + 4.0);
             p.vx = 0.0;
             p.vy = 0.0;
             p.on_ground = false;
